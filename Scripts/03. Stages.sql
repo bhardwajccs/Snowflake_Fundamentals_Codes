@@ -1,7 +1,9 @@
 -- STAGES in SNOWFLAKE
 
 -- User Stage 
--- No Set UP and No Storage Limit.
+-- Used to store files for an individual user.
+-- Files can be loaded into multiple tables.
+-- No Set UP and No Storage Limit--AUTO created for User
 -- No Alter 
 -- No File Format needed to make these Stages
 -- In Projects make this Stage to Store private data that you want No one lese able to Access.
@@ -10,9 +12,14 @@
 
 LIST @~ ;
 
+PUT file://C:/Data/employees.csv @~;
 
+COPY INTO EMPLOYEES
+FROM @~
+FILE_FORMAT = (FORMAT_NAME = 'EMPLOYEE_CSV_FORMAT');
 
 -- Table Stage
+-- Every eligible Snowflake table has its own Table Stage.
 -- AUTO. created when we make a Table.
 -- This Stage is OWNED by Table Owner.
 -- No File Format needed to make these Stages
@@ -22,13 +29,10 @@ LIST @~ ;
 Create or replace table EmpStage22(ID int, Name varchar)
 List @%EmpStage22;    -- We can see all Staged Files here.
 
-PUT file:///path/to/employee.csv @%EmpStage22;
+PUT file://C:/Data/employees.csv @%EmpStage22;
 
 List @%EmpStage22;
 
--- This Now works here
-
-SHOW STAGES;
 
 
  -- INTERNAL and EXTERNAL Stages
