@@ -2,7 +2,17 @@
 
 -- FILE FORMATS in Stages in SF
 
-File Formats to tell Snowflake how to interpret files when loading data from external or internal stages into Snowflake tables, or when unloading data from Snowflake into files.
+File Formats to tell Snowflake how to interpret/Read files when loading data from external or internal stages into Snowflake tables, or 
+when unloading data from Snowflake tables into files.
+
+It Tells
+
+Type of File -- CSV/Excel/Avro?
+Does the CSV file have a header?
+What is the field and Row delimiter?
+What character is used to enclose text?
+How should Snowflake handle NULL values?
+Should invalid records be skipped or cause an error?
 
 */
 
@@ -14,6 +24,8 @@ TYPE = CSV  -- Default Value
 SKIP_HEADER = 1
 FIELD_DELIMITER = ','
 RECORD_DELIMITER = '\n'
+EMPTY_FIELD_AS_NULL = TRUE     # Treat Empty Field as NULL
+NULL_IF = ('NULL', 'null');    # Defines strings interpreted as NULL
 
 
 -- IF Data Fields enclosed in ""
@@ -70,6 +82,7 @@ drop file format csvone
 /*
 
 Semi -Structured Data
+JSON
 
 To Insert the data we need below objects
 -- Data File
