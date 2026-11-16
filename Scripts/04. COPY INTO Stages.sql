@@ -2,7 +2,7 @@ SHOW STAGES;
 
 List @Azure_Ext_Stg_New
 
--- Remove all files from @STG_CSV
+-- Remove all files from Stage
 REMOVE @Azure_Ext_Stg_New;
 
 
@@ -41,7 +41,7 @@ MAX_FILE_SIZE = 17000000
 LIST @STG_CSV;
 
 
--- When we want to COUNT Records in each File in Stage
+-- export data from a Snowflake table to an Azure External Stage in CSV format, with column headers and detailed information about the exported file like Total records and Size of each Files.
 -- DETAILED_OUTPUT = TRUE
 
 
@@ -52,8 +52,10 @@ COPY INTO @Azure_Ext_Stg_New/Customerdata_2.csv
     HEADER = TRUE       -- To see Col names
     OVERWRITE = TRUE;
 
+LIST @STG_CSV;
 
 -- Data VALIDATION Before Unlaoding into STAGE
+-- It will Display data in SQL Output Console
 
 COPY INTO @Azure_Ext_Stg_New/CustomerValidation.csv 
     FROM SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.CUSTOMER 
