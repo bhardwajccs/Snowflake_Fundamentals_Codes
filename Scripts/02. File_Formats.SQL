@@ -2,6 +2,8 @@
 
 -- FILE FORMATS in Stages in SF
 
+File Formats to tell Snowflake how to interpret files when loading data from external or internal stages into Snowflake tables, or when unloading data from Snowflake into files.
+
 */
 
 SHOW FILE FORMATS
