@@ -2,26 +2,20 @@
 
 -- JSON Data -- Semi-Structred Data -- No Rows and Columns
 
+-- Universal data Format -- Cause most of Applications / Users / Enginners can easily work w this data.
+
 -- We get JSON Data from below Sources
 
      -- CRMs
      -- Streamin Data
      -- Applications
+     -- Web APIs
+     -- NoSQL document databases
+     -- Logs and sensor/event streams:
 
--- Universal data Format -- Cause most of Applications / Users / Enginners can easily work w this data.
-
-{
-    'Key': value,
-    'Skills': ['data', 'AI', 'Swimming']     - Arruy,
-    (
-        {
+-- Format of JSON
 
 
-        }
-
-    )
-
-}
 
 create or replace transient table json_tbl(
     json_col variant
@@ -41,14 +35,15 @@ insert into json_tbl(json_col)
 
 
 -- Use  PARSE_JSON()
+-- converts a string containing valid JSON into a VARIANT value so you can query and manipulate semi-structured data w SQL.
 
 insert into json_tbl(json_col) 
     select parse_json('{"firstName":"John", "empid":1001}');
 
 
 -- Order of Insertion is Not followed in JSON
-select * from json_tbl;
 
+select * from json_tbl;
 delete from json_tbl;
 
 insert into json_tbl (json_col)
@@ -95,7 +90,7 @@ Select * from JSON_TBL;
 
 
 
--- Query Data in Snowflake
+-- Data Parsing
 
 -- Accessing individual Elements  from VARIANT Column.
 
@@ -119,9 +114,7 @@ select parse_json(
 
 select * from employee_tbl;
 
--- METHOD 1
-
--- Colon Notation To Access JSON Elements
+-- METHOD 1  -- Colon Notation To Access JSON Elements
 
 -- keys are Case Sensitive -- Else NULL Returned.
 
@@ -195,14 +188,17 @@ select
     emp_json:employee.married as is_married,
     emp_json:employee.has_kids as has_kids,
     emp_json:employee.stock_options as stock_options,
+    
     typeof(emp_json:employee.phone) as all_phone_type,
     ARRAY_SIZE(emp_json:employee.phone) as how_many_phone,
     emp_json:employee.phone[0] as work_phone,
     emp_json:employee.phone[1] as office_phone,
+    
     typeof(emp_json:employee:Address) as address_type,
-    emp_json:employee:Address:street as street,
+    emp_json:employee:Address.street as street,
     emp_json:employee.Address.city as city,
     emp_json:employee.Address.State as state
+    
 from employee_tbl; 
 
 
@@ -220,8 +216,6 @@ select * from employee_tbl;
 
 
 -- JSON doesn't support Date and Timestamp data types
-
--- Date & Timestamp Data Types in Snowflake JSON
 
 Select current_date(), current_timestamp();
 
@@ -252,7 +246,7 @@ Select
 from employee_tbl;
 
 
--- typecast mannually 
+-- typecast mannually in Snowflake -- BEST
 
  select 
         emp_json:dob::date as CleanDoB,
@@ -266,11 +260,9 @@ from employee_tbl;
 
 
 
-
-
-
-
--- Flatting JSON Data & Loading Into respective Snowflake Tables
+-- Flatting/Parsing JSON Data & 
+-- Loading Into respective Snowflake Tables
+-- Finally JOIN them
 
 -- create the table
 
@@ -338,6 +330,7 @@ create or replace sequence address_seq
 
 
 -- Destination Tables
+
 -- employee master table
 create or replace table employee_master(
     emp_pk integer default emp_seq.nextval,
