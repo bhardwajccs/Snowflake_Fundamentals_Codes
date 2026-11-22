@@ -1,6 +1,8 @@
 /*
 
-Flatten() -- Tabular Function that gives output as table for input data like JSON (VARIANT Type), Array, Object data types.
+Flatten()
+
+Tabular Function that gives output as table for input data like JSON (VARIANT Type), Array, Object data types.
 Since it's Table function so used w TABLE Keyward.
 
 Flatten == Explode result into indivbidual rows.
@@ -10,6 +12,19 @@ Flatten == Explode result into indivbidual rows.
 */
 
 -- CASE 1:-  FLATTEN Array SQL Example
+
+-- Dummy example
+
+Select array_construct('A','B','C','D');
+
+SELECT * FROM TABLE(FLATTEN(input => array_construct('A','B','C','D') ) );
+
+SELECT 
+    value:: varchar as Alphabets   
+FROM TABLE(FLATTEN(input => array_construct('A','B','C','D') ) );
+
+
+
 
 create or replace transient table emp01(
     id number,
@@ -37,33 +52,15 @@ select 3,'Isabella', 'Rossi','Snowflake Architect',array_construct('SnowPro Core
 select * from emp01 ;
 
 
-select 
-    flatten_tbl.value::varchar as certification 
-from 
-    table(flatten (input => array_construct('SnowPro Core','SnowPro Adv DE','SnowPro Architect'))) flatten_tbl
-order by 1;
-
-
-
-
--- Dummy example
-
-Select array_construct('A','B','C','D');
-SELECT * FROM TABLE(FLATTEN(input => array_construct('A','B','C','D') ) );
-
-Select *
-from table(flatten(input => array_construct('A','B','C','D')))
-
 -- Solution -- Flattening / Parsing the ARRAYS.
 
-Select * from emp01;
-
 -- Explode LIST >>> Many ROWS
+
 select 
     emp.first_name, 
     emp.last_name, 
-    cert.value::varchar as cert_name from 
-emp01 emp,
+    cert.value::varchar as cert_name 
+from emp01 emp,
 lateral flatten (input => emp.certifications) cert;
 
 
@@ -84,7 +81,7 @@ lateral flatten (
 
 -- CASE 2: FLATTEN OBJECTS (key: Value)
 
-Select * from emp02;
+Select * from emp01;
 
 -- Actual Table data
 CREATE TABLE Sil_Customers
@@ -95,14 +92,14 @@ select
     cert.key::varchar as cert_title,
     cert.value::varchar as cert_marks 
 from 
-    emp02 emp CROSS JOIN
+    emp01 emp CROSS JOIN
 lateral flatten (
     input => emp.certifications,
-    mode => 'OBJECT',
+    mode => 'Array',
     path => ''
 ) cert;
 
-Select * from SIL_CUSTOMERS
+Select * from SIL_CUSTOMERS;
 
 
 
@@ -139,7 +136,7 @@ SELECT
 FROM CAMERA,
 lateral flatten(input => camera.rear_camera) rear,
 lateral flatten(input => camera.DIM_LWH) dim
-where dim.index = 0
+--where dim.index = 0
 ;
 
 
@@ -230,8 +227,8 @@ lateral flatten (input => emp.json_data:certifications) cert;
 CREATE OR REPLACE TRANSIENT TABLE emp_json
 (
     emp_json_data VARIANT
-)
-STAGE_FILE_FORMAT = (TYPE = 'JSON');
+);
+-- STAGE_FILE_FORMAT = (TYPE = 'JSON');
 
 -- Put Some JSON File in Stage 
 
@@ -239,8 +236,6 @@ STAGE_FILE_FORMAT = (TYPE = 'JSON');
 -- "C:\Users\lbhardwaj\OneDrive - California Creative Solutions, Inc\Data_Backup_Cloud_Lalit\Lalit BI\Lalit Business Intelligence CCS\SnowFlake\Data\NestedJSON.json"
 
 COPY INTO emp_json;
-
--- lets query the json using colon notation;
 
 -- lets query the json using colon notation;
 
