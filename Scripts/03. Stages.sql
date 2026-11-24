@@ -1,6 +1,10 @@
+
 -- STAGES in SNOWFLAKE
 
+-- 4 types
+
 -- User Stage 
+
 -- Used to store files for an individual user.
 -- Files can be loaded into multiple tables.
 -- No Set UP and No Storage Limit--AUTO created for User
@@ -12,13 +16,14 @@
 
 LIST @~ ;
 
-PUT file://C:/Data/employees.csv @~;
+PUT file://C:/Users/lbhardwaj/OneDrive - California Creative Solutions, Inc/Data_Backup_Cloud_Lalit/Timesheet_Attendance.xlsx @~;    -- SNOWSQL
 
 COPY INTO EMPLOYEES
 FROM @~
 FILE_FORMAT = (FORMAT_NAME = 'EMPLOYEE_CSV_FORMAT');
 
 -- Table Stage
+
 -- Every eligible Snowflake table has its own Table Stage.
 -- AUTO. created when we make a Table.
 -- This Stage is OWNED by Table Owner.
@@ -26,7 +31,8 @@ FILE_FORMAT = (FORMAT_NAME = 'EMPLOYEE_CSV_FORMAT');
 -- Don't support transofrmations while Loading data into This Stage.
 -- Use it if Files needed to be copied in to single table but files to be used by many users.
 
-Create or replace table EmpStage22(ID int, Name varchar)
+Create or replace table EmpStage22(ID int, Name varchar);
+
 List @%EmpStage22;    -- We can see all Staged Files here.
 
 PUT file://C:/Data/employees.csv @%EmpStage22;
@@ -40,26 +46,31 @@ List @%EmpStage22;
  -- INTERNAL Stages
  
  -- used when multiple files to be used by multiple Users and load into multiple Tables.
+ -- When Client don't have Azure/AWS but Local >>>> SF
 
-SHOW STAGES -- Only Shows INTERNAL and EXTERNAL Stages
+SHOW STAGES; -- Only Shows INTERNAL and EXTERNAL Stages
 
 /******************************
  -- INTERNAL Stage
  ******************************/
+
+DROP STAGE Stage_Data;
  
-CREATE OR REPLACE STAGE Stage_Demo
+CREATE OR REPLACE STAGE Stage_Data;
 
-LIST @Stage_Data  -- How many Files in Stage
+LIST @Stage_Data;  -- How many Files in Stage
 
-DESC STAGE Stage_Data -- See different Properties of Stage
+DESC STAGE Stage_Data; -- See different Properties of Stage
 
 -- See data of a Files in Stage
 
-Select $1,$2,$3,$4 from @Stage_Data limit 3
+Select $1,$2,$9 from @Stage_Data limit 10;
 
 -- See data of specific File
 
-Select $1,$2,$3,$4 from @Stage_Data/FinancialSampleCSV.csv
+Select $1,$2,$3,$4 from @Stage_Data/FinancialSample_CSV_new_222.csv;
+
+Select $1,$2,$3,$4 from @Stage_Data/house-price.parquet;
 
 -- How to Skip Headers as they are coming as 1st ROW
 -- Make a File Format
@@ -70,12 +81,14 @@ SKIP_HEADER = 1;
 
 -- Modify the Stage using this File Format
 
-CREATE OR REPLACE STAGE Stage_Demo
-FILE_FORMAT = CSVTYPE
+CREATE OR REPLACE STAGE Stage_Data
+FILE_FORMAT = CSVTYPE;
+
+LIST @Stage_Data;
 
 -- Reload data into Stage as Old data is gone.
 
-Select $1,$2,$3,$4 from @Stage_Data/FinancialSampleCSV.csv
+Select $1,$2,$3,$4 from @Stage_Data/FinancialSample_CSV_new_222.csv;
 
 
 --------------------------
@@ -112,11 +125,3 @@ COPY INTO target_csv_table
 FROM @landing_zone_stage
 FILE_FORMAT = (FORMAT_NAME = 'ff_csv')
 PATTERN = '.*\.csv'; -- Ingests only CSV files
-
-
-
-
-
-
-
-
