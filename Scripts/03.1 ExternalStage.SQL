@@ -1,3 +1,6 @@
+Create Database Lalit_DB;
+Create Schema Lalit_Schema;
+
 /*********************************************
 
 -- EXTERNAL STAGE
@@ -16,7 +19,7 @@ CREATE OR REPLACE STORAGE INTEGRATION azure_storage_integration
     STORAGE_PROVIDER = AZURE
     ENABLED = TRUE
     AZURE_TENANT_ID = '5df7bfe8-c66e-4465-9a6b-7636fd5c6dd8'
-    STORAGE_ALLOWED_LOCATIONS = ('azure://lalitsa.blob.core.windows.net/source/')   -- replace https w azure
+    STORAGE_ALLOWED_LOCATIONS = ('azure://lalitsadatalake.blob.core.windows.net/raw/')   -- replace https w azure
     ;
 
 
@@ -53,16 +56,16 @@ CREATE OR REPLACE FILE FORMAT CSV_FORMAT_NEW
 
 CREATE OR REPLACE STAGE Azure_Ext_Stg_New
     STORAGE_INTEGRATION = azure_storage_integration
-    URL = 'azure://lalitsa.blob.core.windows.net/source/'
+    URL = 'azure://lalitsadatalake.blob.core.windows.net/raw/'
     FILE_FORMAT = CSV_FORMAT_NEW
     ;
 
 
 -- LIST Stage Files.
 
-LIST @Azure_Ext_Stg_New
+LIST @Azure_Ext_Stg_New;
 
-Select $1, $2, $3, metadata$filename from @Azure_Ext_Stg_New limit 20;
+Select $1, $2, $3, metadata$filename from @Azure_Ext_Stg_New/FinancialSample_CSV_new_222.csv limit 20;
 
 
 -- STAGE 5
@@ -95,7 +98,7 @@ CREATE OR REPLACE TABLE Financials(
 
 -- Move Data
 
-COPY INTO Financials FROM @Azure_Ext_Stg_New;
+COPY INTO Financials FROM @Azure_Ext_Stg_New/FinancialSample_CSV_new_222.csv;
 
 
 -- Verify Data
