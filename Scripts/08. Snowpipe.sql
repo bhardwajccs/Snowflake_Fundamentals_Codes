@@ -1,66 +1,25 @@
+Create Database Lalit_DB;
+Create Schema Lalit_Schema;
 
-/*
+/*********************************************
 
-Snowpipe is Snowflake's continuous data ingestion service. It automates loading data from files into Snowflake tables as soon as they become available in cloud storage, eliminating the need for manual scheduling or large, periodic batch loads
+-- EXTERNAL STAGE
 
-No Manual COPY INTO -- It's Real-Time Pipelines -- No Scheduler / CRON Jobs is needed.
-
-Files Arrives >>> Snowpipe is Triggered as it receives Notification from Bucket >>> Data is loaded.
-
-Snowpipe uses Serveless means you do not pay per-cluster-uptime. Instead, Snowpipe is billed directly per gigabyte (GB) of data ingested.
+*******************************************/
 
 
-    
-Azure Blob Storage                  -- Files Lands
-        │
-        ▼
-Azure Event Grid                    -- It fires event to Storage Queue. 
-        │
-        ▼
-Azure Storage Queue                 -- receives message
-        │
-        ▼
-Snowflake Notification Integration   -- Snowflake Notification Integration reads queue
-        │
-        ▼
-Snowpipe (AUTO_INGEST = TRUE)        -- Triggered
-        │
-        ▼
-Snowflake Target Table               -- Data Loaded
+-- STEP 1: 
 
+-- Snowflake Storage Integration 
 
-
-
--- Requirements
-
-AZURE
-    SA
-    TenantID     = '5df7bfe8-c66e-4465-9a6b-7636fd5c6dd8'
-    ContainerURL = 'azure://lalitsa.blob.core.windows.net/source/'
-    Azure Storage Queue URL = https://lalitsa.queue.core.windows.net/snowpipequeuenew
-    Register Event grid w Queue
-    
-
-
-SNOWFLAKE
-    Table
-    Storage Integration
-    Notification Integration
-    File Format
-    Stage
-    COPY INTO
-
-
-*/
-
--- SNOWPIPE = AUTO Data Ingestion
+-- for Secure Snowflake to read Blob Storage.
 
 CREATE OR REPLACE STORAGE INTEGRATION azure_storage_integration
     TYPE = EXTERNAL_STAGE
     STORAGE_PROVIDER = AZURE
     ENABLED = TRUE
     AZURE_TENANT_ID = '5df7bfe8-c66e-4465-9a6b-7636fd5c6dd8'
-    STORAGE_ALLOWED_LOCATIONS = ('azure://lalitsa.blob.core.windows.net/source/')   -- replace https w azure
+    STORAGE_ALLOWED_LOCATIONS = ('azure://lalitsadatalake.blob.core.windows.net/raw/')   -- replace https w azure
     ;
 
 
@@ -97,16 +56,16 @@ CREATE OR REPLACE FILE FORMAT CSV_FORMAT_NEW
 
 CREATE OR REPLACE STAGE Azure_Ext_Stg_New
     STORAGE_INTEGRATION = azure_storage_integration
-    URL = 'azure://lalitsa.blob.core.windows.net/source/'
+    URL = 'azure://lalitsadatalake.blob.core.windows.net/raw/'
     FILE_FORMAT = CSV_FORMAT_NEW
     ;
 
 
 -- LIST Stage Files.
 
-LIST @Azure_Ext_Stg_New
+LIST @Azure_Ext_Stg_New;
 
-Select $1, $2, $3, metadata$filename from @Azure_Ext_Stg_New limit 20;
+Select $1, $2, $3, metadata$filename from @Azure_Ext_Stg_New/FinancialSampleCSV.csv limit 3;
 
 
 -- STAGE 5
@@ -135,6 +94,7 @@ CREATE OR REPLACE TABLE Financials(
                                             );
 
 
+-- STEP 6:
 
 -- Stage 6
 
@@ -149,8 +109,9 @@ CREATE OR REPLACE NOTIFICATION INTEGRATION Azure_Notification_Int_v55
     TYPE = QUEUE
     NOTIFICATION_PROVIDER = AZURE_STORAGE_QUEUE
     AZURE_TENANT_ID = '5df7bfe8-c66e-4465-9a6b-7636fd5c6dd8'
-    AZURE_STORAGE_QUEUE_PRIMARY_URI = 'https://lalitsa.queue.core.windows.net/myqueue'
+    AZURE_STORAGE_QUEUE_PRIMARY_URI = 'https://lalitsadatalake.queue.core.windows.net/queuesf'
     ;
+
 
 DESC NOTIFICATION INTEGRATION Azure_Notification_Int_v55;
 
@@ -165,22 +126,20 @@ DESC NOTIFICATION INTEGRATION Azure_Notification_Int_v55;
 
 -- SA >> Evenets > Craete Event Subscription > follow...
 
-
-
--- STEP 8: SNOWPIPE
+-- Step 8 SNOWPIPE
 
 CREATE or replace PIPE Azure_Snowpipe
     AUTO_INGEST = TRUE
     INTEGRATION = Azure_Notification_Int_v55
     AS
-    COPY INTO Financials FROM @Azure_Ext_Stg_New FORCE = TRUE;
-
-
-Select * from Financials;
-
-
-TRUNCATE TABLE Financials;
-
+    COPY INTO Financials FROM @Azure_Ext_Stg_New ;
+    --FORCE = TRUE;
 
 -- Azure Snowpipe Status
 SELECT SYSTEM$PIPE_STATUS('Azure_Snowpipe');
+
+-- Verify Data
+
+Select * from Financials;
+
+truncate table Financials;
