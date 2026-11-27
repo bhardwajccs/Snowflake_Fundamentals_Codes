@@ -109,7 +109,7 @@ CREATE OR REPLACE NOTIFICATION INTEGRATION Azure_Notification_Int_v55
     TYPE = QUEUE
     NOTIFICATION_PROVIDER = AZURE_STORAGE_QUEUE
     AZURE_TENANT_ID = '5df7bfe8-c66e-4465-9a6b-7636fd5c6dd8'
-    AZURE_STORAGE_QUEUE_PRIMARY_URI = 'https://lalitsadatalake.queue.core.windows.net/queuesf'
+    AZURE_STORAGE_QUEUE_PRIMARY_URI = 'https://lalitsadatalake.queue.core.windows.net/queuesf111'
     ;
 
 
