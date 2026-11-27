@@ -14,19 +14,35 @@ Disadvantages
 */
  Show stages;
 
-LIST @Azure_Ext_Stg_New
+LIST @Azure_Ext_Stg_New;
 
-LIST  @Azure_Ext_Stg;
+-- method 1 -- External Table without SCHEMA
 
--- method 1
+-- Ext table has "VALUES" Column by DEFAULT to hold all data.
 
--- External Table without SCHEMA
+SHOW NOTIFICATION INTEGRATIONS;
 
--- Ext table has VALUS Column by DEFAULT to hold all data.
+DESC NOTIFICATION INTEGRATION
+AZURE_NOTIFICATION_INT_V55;
+
+GRANT USAGE ON INTEGRATION Azure_Notification_Int_v55
+TO ROLE ACCOUNTADMIN;
+
+/*
+CREATE OR REPLACE EXTERNAL TABLE my_ext_tbl
+    INTEGRATION = 'Azure_Notification_Int_v55'
+    with location = @Azure_Ext_Stg_New
+    AUTO_REFRESH = TRUE    
+    file_format = ( TYPE = CSV 
+                    SKIP_HEADER = 1 
+                    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+                );
+*/
 
 CREATE OR REPLACE EXTERNAL TABLE my_ext_tbl
+    --INTEGRATION = 'Azure_Notification_Int_v55'
     with location = @Azure_Ext_Stg_New
-    AUTO_REFRESH = TRUE    -- It means if New File is added in Source SF will try to AUTO Refrsh Ext. Table
+    AUTO_REFRESH = FALSE    
     file_format = ( TYPE = CSV 
                     SKIP_HEADER = 1 
                     FIELD_OPTIONALLY_ENCLOSED_BY = '"'
@@ -34,51 +50,146 @@ CREATE OR REPLACE EXTERNAL TABLE my_ext_tbl
 
 Select * from my_ext_tbl;
 
-Select $1,$2 from @Azure_Ext_Stg;
+/*
 
-Select VALUE:c1::varchar as "Course.value", VALUE from my_ext_tbl;
+-- Upload 
 
+""C:\Users\lbhardwaj\OneDrive - California Creative Solutions, Inc\Data_Backup_Cloud_Lalit\Lalit BI\Lalit Business Intelligence CCS\Module7=PowerBI\Data Sets\Datasets_Lalit_Training\Courses_Data.CSV""
 
-Select VALUE:c1:: varchar as DepttNames from my_ext_tbl;
+*/
 
--- Data of c2 column
--- CTAS  
-CREATE TABLE Dummy222 
-AS
+-- External tables without Metadata -- Mannually
+
+List @Azure_Ext_Stg_New/Courses_Data;
+
+Select $1, $2,$3 from @Azure_Ext_Stg_New/Courses_Data;
+
+-- Extract Columns
 Select 
-    VALUE:c2::varchar as "Country.value", 
-    VALUE:c1::varchar as "Segment.value" 
+    VALUE:c1::varchar as "CourseName",
+    VALUE:c2::varchar as "Trainer",
+    METADATA$FILENAME
 from my_ext_tbl;
-
-Select * from Dummy;
-
-
--- INSERT INTO SELECT
-INSERT INTO Dummy2
-    Select VALUE:c2::varchar as "Country.value", VALUE:c1::varchar as "Segment.value" from my_ext_tbl;
-
-
 
 
 
 -- Method 2 
 
--- Make table with columns from External files
+-- Make table with columns from External files Mannually
 
 CREATE OR REPLACE EXTERNAL TABLE tbl_w_cols
     (
-        C1 varchar AS (VALUE:c1::varchar),
-        C2 varchar AS (VALUE:c2::varchar)
+        C11 varchar AS (VALUE:c1::varchar),
+        C22 varchar AS (VALUE:c2::varchar)
     )
-    location = @Azure_Ext_Stg
+    location = @Azure_Ext_Stg_New
     AUTO_REFRESH = FALSE
     file_format = CSV_FORMAT_NEW;
 
-Select C1,C2 from tbl_w_cols;
+Select C11,C22 from tbl_w_cols;
 
 -- See Filenames as well
 Select C1,C2, METADATA$FILENAME from tbl_w_cols;
 
 
+-- METHOD 3
+
+-- Evolving Schema Handling -- BEST
+
+-- First Check Schema at Stage using INFER_SCHEMA
+
+SELECT *
+FROM TABLE(
+    INFER_SCHEMA(
+        LOCATION => '@Azure_Ext_Stg_New/SchemaEvolution/',
+        FILE_FORMAT => 'CSV_FORMAT_NEW'
+    )
+);
+
+-- Second make -- External Table dynamically using USING TEMPLATE
+
+CREATE OR REPLACE EXTERNAL TABLE EXT_EMPLOYEE_DYNAMIC
+USING TEMPLATE
+(
+    SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
+        FROM TABLE(
+            INFER_SCHEMA(
+                LOCATION => '@Azure_Ext_Stg_New/SchemaEvolution/',
+                FILE_FORMAT => 'CSV_FORMAT_NEW'
+            )
+        )
+)
+-- INTEGRATION = Azure_Notification_Int_v55
+LOCATION = @Azure_Ext_Stg_New/SchemaEvolution/,
+FILE_FORMAT = CSV_FORMAT_NEW
+AUTO_REFRESH = FALSE;
+
+Select * from EXT_EMPLOYEE_DYNAMIC;
 
 
+
+DESC EXTERNAL TABLE EXT_EMPLOYEE_DYNAMIC;
+
+
+SELECT
+    CourseName,
+    Trainer,
+    METADATA$FILENAME AS SOURCE_FILE
+FROM EXT_EMPLOYEE_DYNAMIC;
+
+
+-- Enable AUTO_REFRESH with Azure Notification Integration -- enable automatic file metadata refresh.
+
+-- ISSUE -- Add / Remove CSV Columns
+
+-- CSV Inference didn't worked
+
+-- NOTE 
+-- For CSV files, schema inference uses PARSE_HEADER = TRUE to detect column names from the header row.
+
+CREATE OR REPLACE FILE FORMAT CSV_INFER_FORMAT
+    TYPE = CSV
+    PARSE_HEADER = TRUE
+    FIELD_OPTIONALLY_ENCLOSED_BY = '"';
+
+-- Use to Infer schema
+
+SELECT *
+FROM TABLE(
+    INFER_SCHEMA(
+        LOCATION => '@Azure_Ext_Stg_New/SchemaEvolution/',
+        FILE_FORMAT => 'CSV_INFER_FORMAT'
+    )
+);
+
+-- For the external table itself, use a separate CSV file format with SKIP_HEADER = 1, because PARSE_HEADER isn't supported for external tables.
+
+CREATE OR REPLACE FILE FORMAT CSV_EXT_FORMAT
+    TYPE = CSV
+    SKIP_HEADER = 1
+    FIELD_OPTIONALLY_ENCLOSED_BY = '"';
+
+
+CREATE OR REPLACE EXTERNAL TABLE EXT_EMPLOYEE_DYNAMIC
+USING TEMPLATE
+(
+    SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
+        FROM TABLE(
+            INFER_SCHEMA(
+                LOCATION => '@Azure_Ext_Stg_New/SchemaEvolution/',
+                FILE_FORMAT => 'CSV_INFER_FORMAT'
+            )
+        )
+)
+-- INTEGRATION = Azure_Notification_Int_v55
+LOCATION = @Azure_Ext_Stg_New/SchemaEvolution/,
+FILE_FORMAT = CSV_EXT_FORMAT
+AUTO_REFRESH = FALSE;
+
+Select * from EXT_EMPLOYEE_DYNAMIC;
+
+SELECT
+    CourseName,
+    Trainer,
+    METADATA$FILENAME AS SOURCE_FILE
+FROM EXT_EMPLOYEE_DYNAMIC;
