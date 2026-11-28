@@ -78,6 +78,16 @@ Automatically granted by default to every user and role
 Objects owned by this role is available to every other user and role within the account
 
 */
+
+-- Make a User 
+-- Check in new Account
+-- make WH and check
+-- Make Role and Assign n Users to Role
+-- Future Roles and check
+
+
+
+
 SELECT
     CURRENT_ROLE(),
     CURRENT_DATABASE(),
@@ -124,7 +134,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA Snowsql.raw_layer T
 SHOW GRANTS ON DATABASE SNOWSQL;
 
 -- Futrue Roles
--- Go to DB > Privilidges > Change / Add
+
 CREATE TABLE SNOWSQL.RAW_LAYER.ABC(ID INT);
 
 DROP TABLE ABC;
